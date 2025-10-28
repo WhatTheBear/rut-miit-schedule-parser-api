@@ -12,9 +12,8 @@ def home_page() -> dict[str, str]:
 
 
 @app.get("/api/get_schedule")
-def get_schedule_endpoint(group: int):
-    test: Parser = Parser(group)
-    return test.get_parsed_api_dict()
+def get_schedule_endpoint(group: str):
+    return Parser.get_parsed_api_dict(group)
 
 
 if __name__ == "__main__":

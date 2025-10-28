@@ -22,22 +22,26 @@ class Parser:
         self.group: str = str(group)
         pass
 
-    def get_parsed_api_dict(self):
+    @staticmethod
+    def get_parsed_api_dict(group: str):
         group_time_table_id: dict = requests.get(
-            url=str(schedule_api_url + self.group),
+            url=str(schedule_api_url + group),
             headers={"User-Agent": "Mozilla/5.0"},
         ).json()
 
         group_schledule_raw: dict = requests.get(
             url=str(
                 schedule_api_url
-                + self.group
+                + group
                 + "/"
                 + group_time_table_id["timetables"][0]["id"]
             ),
             headers={"User-Agent": "Mozilla/5.0"},
         ).json()
+        if group_schledule_raw["periodicContent"]["events"]:
+            return
         group_week_events: list = group_schledule_raw["periodicContent"]["events"]
+
         new_schledule_table: dict = {}
         week_days: list = [
             "monday",
