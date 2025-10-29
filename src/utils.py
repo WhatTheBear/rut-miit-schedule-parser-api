@@ -1,8 +1,27 @@
 from dataclasses import dataclass, asdict
-import requests
+from typing_extensions import ContextManager
+import requests, os
+from pymongo import MongoClient
+from contextlib import contextmanager
 from datetime import datetime as dt
 
 schedule_api_url: str = "https://rut-miit.ru/data-service/data/timetable/v2/group/"
+
+
+@contextmanager
+def get_db_client(connection_string: str):
+    client = MongoClient(connection_string, serverSelectionTimeoutMS=5000)
+
+    try:
+        client.admin.command("ping")
+        yield client
+
+    except Exception as e:
+        print(f"Ошибка подключения к базе данных: {e}")
+        raise
+
+    finally:
+        client.close()
 
 
 @dataclass
@@ -17,13 +36,12 @@ class EventInfo:
     lecturers: list
 
 
-class Parser:
-    def __init__(self, group: int) -> None:
-        self.group: str = str(group)
+class ParseUtils:
+    def __init__(self) -> None:
         pass
 
     @staticmethod
-    def get_parsed_api_dict(group: str):
+    def update_parsed_schedule_by_id(group: str) -> None:
         group_time_table_id: dict = requests.get(
             url=str(schedule_api_url + group),
             headers={"User-Agent": "Mozilla/5.0"},
@@ -38,11 +56,12 @@ class Parser:
             ),
             headers={"User-Agent": "Mozilla/5.0"},
         ).json()
-        if group_schledule_raw["periodicContent"]["events"]:
-            return
+
+        if not group_schledule_raw["periodicContent"]["events"]:
+            raise ValueError("Группа не обнаружена")
         group_week_events: list = group_schledule_raw["periodicContent"]["events"]
 
-        new_schledule_table: dict = {}
+        new_schledule_table: dict = {"groupId": group}
         week_days: list = [
             "monday",
             "tuesday",
@@ -52,15 +71,18 @@ class Parser:
             "saturday",
             "sunday",
         ]
-        for week in range(1, 3):
+        weeks: list = ["first_week", "second_week"]
+
+        for week in weeks:
             new_schledule_table[week]: dict = {}
+
             for day in week_days:
                 new_schledule_table[week][day]: list = []
+
         for event_number in range(len(group_week_events)):
             event_data: dict = group_week_events[event_number]
             event_start: dt = dt.fromisoformat(event_data["startDatetime"])
 
-            # Создаём экземпляр EventInfo
             event = EventInfo(
                 name=event_data["name"],
                 type=event_data["typeName"],
@@ -73,15 +95,20 @@ class Parser:
             )
 
             interval = int(event_data["recurrenceRule"]["interval"])
+
             if interval == 1:
-                for n in range(1, 3):
-                    new_schledule_table[n][week_days[event_start.weekday()]].append(
+                for week in weeks:
+                    new_schledule_table[week][week_days[event_start.weekday()]].append(
                         asdict(event)
                     )
+
             elif interval == 2:
                 period: int = event_data["periodNumber"]
-                new_schledule_table[period][week_days[event_start.weekday()]].append(
-                    asdict(event)
-                )
+                new_schledule_table[weeks[period - 1]][
+                    week_days[event_start.weekday()]
+                ].append(asdict(event))
 
-        return new_schledule_table
+            with get_db_client(str(os.getenv("DB_CON_STR"))) as client:
+                client.journal.timetables.update_one(
+                    {"groupId": f"{group}"}, {"$set": new_schledule_table}, upsert=True
+                )
