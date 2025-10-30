@@ -1,6 +1,7 @@
+import os
 from fastapi import FastAPI
-from src.utils import ParseUtils
-import uvicorn
+from src.journal import Journal
+# import uvicorn
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -20,5 +21,7 @@ def home_page() -> dict[str, str]:
 
 
 if __name__ == "__main__":
-    uvicorn.run(app=app)
+    # uvicorn.run(app=app)
     # ParseUtils.update_parsed_schedule_by_id("189103")
+    jr = Journal(os.getenv("DB_CON_STR"))
+    jr._update_group_schedule("202181")
