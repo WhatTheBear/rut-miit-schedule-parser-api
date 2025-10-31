@@ -14,15 +14,15 @@ class EventInfo:
     lecturers: list
 
 
-class Parser:
+class Formatter:
     def __init__(self):
         pass
 
     @staticmethod
-    def parse_schedule_json(schedule_json: str, groupId: str) -> dict:
+    def format_schedule_json(schedule_json: str, groupId: int) -> dict:
         group_week_events: list = schedule_json["periodicContent"]["events"]
-
-        schedule_table: dict = {"groupId": groupId}
+        new_full_json : dict = {"groupId": groupId,
+                                "schedule_table":{}}
         week_days: list = [
             "monday",
             "tuesday",
@@ -35,7 +35,7 @@ class Parser:
         weeks: list = ["first_week", "second_week"]
 
         for w in weeks:
-            schedule_table[w] = {d: [] for d in week_days}
+            new_full_json["schedule_table"][w] = {d: [] for d in week_days}
 
         for event_number in range(len(group_week_events)):
             event_data: dict = group_week_events[event_number]
@@ -56,15 +56,15 @@ class Parser:
 
             if interval == 1:
                 for week in weeks:
-                    schedule_table[week][week_days[event_start.weekday()]].append(
+                    new_full_json["schedule_table"][week][week_days[event_start.weekday()]].append(
                         asdict(event)
                     )
 
             elif interval == 2:
                 period: int = event_data["periodNumber"]
-                schedule_table[weeks[period - 1]][
+                new_full_json["schedule_table"][weeks[period - 1]][
                     week_days[event_start.weekday()]
                 ].append(asdict(event))
 
-        return schedule_table
+        return new_full_json
     # def parse_groups()

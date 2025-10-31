@@ -1,27 +1,26 @@
 import os
 from fastapi import FastAPI
 from src.journal import Journal
-# import uvicorn
+import uvicorn
 from dotenv import load_dotenv
 
 load_dotenv()
 
+jr = Journal(os.getenv("DB_CON_STR"))
 
 app = FastAPI()
 
 
 @app.get("/")
-def home_page() -> dict[str, str]:
+def home_page() -> str:
     return "Продам гараж"
 
 
-# @app.get("/api/get_schedule")
-# def get_schedule_endpoint(group: str):
-#     return DBUtils.get_parsed_api_dict(group)
+@app.get("/api/get_schedule")
+def get_schedule_endpoint(group: int) -> dict:
+    return jr.getScheduleById(jr.getGroupIdByName("УВП-111"))
 
 
 if __name__ == "__main__":
-    # uvicorn.run(app=app)
+    uvicorn.run(app=app)
     # ParseUtils.update_parsed_schedule_by_id("189103")
-    jr = Journal(os.getenv("DB_CON_STR"))
-    jr._update_group_schedule("202181")
