@@ -67,4 +67,20 @@ class Formatter:
                 ].append(asdict(event))
 
         return new_full_json
-    # def parse_groups()
+    
+    def format_groups_list(institutes_list : list) -> list:
+        new_groups_list: list = []
+
+        for institute in institutes_list:
+            institute_name = institute["name"]
+            for course in institute["courses"]:
+                for specialtie in course["specialties"]:
+                    for group in specialtie["groups"]:
+                        new_groups_list.append({
+                            "instituteName": institute_name,
+                            "specialtieName": specialtie["name"],
+                            "groupName": group["name"],
+                            "groupId": int(group["id"])
+                        })
+        return new_groups_list
+

@@ -1,9 +1,9 @@
-from pymongo import MongoClient
+from pymongo import MongoClient, UpdateOne
 from pymongo.errors import ServerSelectionTimeoutError
 
 import requests
 
-from Formatter import Formatter
+from src.formatter import Formatter
 
 
 class Journal:
@@ -20,7 +20,26 @@ class Journal:
             print(f"{e}\n Ошибка подключения к базе данных")
 
     def _update_groups_list(self):
-        pass
+        schedule_url: str = "https://rut-miit.ru/data-service/data/timetable/groups-catalog"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        institutes_list: dict = requests.get(
+            url=schedule_url,
+            headers=headers,
+        ).json()
+        groups_list = Formatter.format_groups_list(institutes_list['institutes'])
+        print(groups_list)
+        operations = [
+            UpdateOne(
+                {"groupId": group["groupId"]},
+                {"$set": group},
+                upsert=True
+            )
+            for group in groups_list
+        ]
+
+        if operations:
+            self.client.journal.groups.bulk_write(operations)
+
 
     def _update_group_schedule(self, groupId: int) -> None:
         schedule_url: str = "https://rut-miit.ru/data-service/data/timetable/v2/group/"

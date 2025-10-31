@@ -18,7 +18,8 @@ def home_page() -> str:
 
 @app.get("/api/get_schedule")
 def get_schedule_endpoint(group: int) -> dict:
-    return jr.getScheduleById(jr.getGroupIdByName("УВП-111"))
+    return jr.getScheduleById(group)
+    # jr._update_groups_list()
 
 
 if __name__ == "__main__":
