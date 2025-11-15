@@ -61,12 +61,12 @@ class Formatter:
         for institute in institutes_list:
             institute_name = institute["name"]
             for course in institute["courses"]:
-                for specialtie in course["specialties"]:
-                    for group in specialtie["groups"]:
+                for specialty in course["specialties"]:
+                    for group in specialty["groups"]:
                         new_groups_list.append(
                             {
                                 "instituteName": institute_name,
-                                "specialtieName": specialtie["name"],
+                                "specialtyName": specialty["name"],
                                 "groupName": group["name"],
                                 "groupId": int(group["id"]),
                             }

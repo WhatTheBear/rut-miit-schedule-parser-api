@@ -31,8 +31,7 @@ class Users:
 
     def register(self, userName: str, login: str, password: str) -> dict:
         if self.getUserByLogin(login) is not None:
-            return {"status": "err",
-                    "name": "Пользователь существует!"}
+            return {"status": "err", "name": "Пользователь существует!"}
 
         login_data: dict = {
             "login": login,
@@ -49,4 +48,4 @@ class Users:
         }
 
         self.client.journal.users.insert_one(user)
-        return {"staus" : "succses"}
+        return {"status": "success"}
