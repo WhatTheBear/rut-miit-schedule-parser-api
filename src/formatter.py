@@ -45,13 +45,13 @@ class Formatter:
                 for week in weeks:
                     new_full_json["schedule_table"][week][
                         week_days[event_start.weekday()]
-                    ].append(event.model_dump)
+                    ].append(event.model_dump())
 
             elif interval == 2:
                 period: int = event_data["periodNumber"]
                 new_full_json["schedule_table"][weeks[period - 1]][
                     week_days[event_start.weekday()]
-                ].append(event.model_dump)
+                ].append(event.model_dump())
 
         return new_full_json
 
