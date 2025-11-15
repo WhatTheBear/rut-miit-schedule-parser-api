@@ -6,7 +6,7 @@ class Journal:
     def __init__(self, client) -> None:
         self.client = client
 
-    def _update_groups_list(self) -> None:
+    def _update_groups(self) -> None:
         schedule_url: str = (
             "https://rut-miit.ru/data-service/data/timetable/groups-catalog"
         )
@@ -20,7 +20,7 @@ class Journal:
         groups_list = Formatter.format_groups_list(institutes_list["institutes"])
         for group in groups_list:
             self.client.journal.groups.update_one(
-            {"groupId": group["groupId"]}, {"$set": groups_list}, upsert=True
+            {"groupId": group["groupId"]}, {"$set": group}, upsert=True
         )
 
 
