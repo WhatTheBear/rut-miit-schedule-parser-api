@@ -1,17 +1,5 @@
-from dataclasses import dataclass, asdict
+from src.schemes import EventInfo
 from datetime import datetime as dt
-
-
-@dataclass
-class EventInfo:
-    name: str
-    type: str
-    start: str
-    end: str
-    slot: str
-    audience: list
-    groups: list
-    lecturers: list
 
 
 class Formatter:
@@ -21,8 +9,7 @@ class Formatter:
     @staticmethod
     def format_schedule_json(schedule_json: str, groupId: int) -> dict:
         group_week_events: list = schedule_json["periodicContent"]["events"]
-        new_full_json : dict = {"groupId": groupId,
-                                "schedule_table":{}}
+        new_full_json: dict = {"groupId": groupId, "schedule_table": {}}
         week_days: list = [
             "monday",
             "tuesday",
@@ -56,19 +43,19 @@ class Formatter:
 
             if interval == 1:
                 for week in weeks:
-                    new_full_json["schedule_table"][week][week_days[event_start.weekday()]].append(
-                        asdict(event)
-                    )
+                    new_full_json["schedule_table"][week][
+                        week_days[event_start.weekday()]
+                    ].append(event.model_dump)
 
             elif interval == 2:
                 period: int = event_data["periodNumber"]
                 new_full_json["schedule_table"][weeks[period - 1]][
                     week_days[event_start.weekday()]
-                ].append(asdict(event))
+                ].append(event.model_dump)
 
         return new_full_json
-    
-    def format_groups_list(institutes_list : list) -> list:
+
+    def format_groups_list(institutes_list: list) -> list:
         new_groups_list: list = []
 
         for institute in institutes_list:
@@ -76,11 +63,12 @@ class Formatter:
             for course in institute["courses"]:
                 for specialtie in course["specialties"]:
                     for group in specialtie["groups"]:
-                        new_groups_list.append({
-                            "instituteName": institute_name,
-                            "specialtieName": specialtie["name"],
-                            "groupName": group["name"],
-                            "groupId": int(group["id"])
-                        })
+                        new_groups_list.append(
+                            {
+                                "instituteName": institute_name,
+                                "specialtieName": specialtie["name"],
+                                "groupName": group["name"],
+                                "groupId": int(group["id"]),
+                            }
+                        )
         return new_groups_list
-

@@ -1,28 +1,15 @@
-from pymongo import MongoClient, UpdateOne
-from pymongo.errors import ServerSelectionTimeoutError
-
 import requests
-from datetime import datetime as dt
 
 from src.formatter import Formatter
 
-
 class Journal:
-    def __init__(self, connection_string, timeout_ms=5000) -> None:
-        self.client: MongoClient = MongoClient(
-            connection_string,
-            serverselectiontimeoutms=timeout_ms,
-        )
-
-        try:
-
-            self.client.admin.command("ping")
-
-        except ServerSelectionTimeoutError as e:
-            print(f"{e}\n Ошибка подключения к базе данных")
+    def __init__(self, client) -> None:
+        self.client = client
 
     def _update_groups_list(self) -> None:
-        schedule_url: str = "https://rut-miit.ru/data-service/data/timetable/groups-catalog"
+        schedule_url: str = (
+            "https://rut-miit.ru/data-service/data/timetable/groups-catalog"
+        )
 
         headers = {"User-Agent": "Mozilla/5.0"}
         institutes_list: dict = requests.get(
@@ -30,19 +17,11 @@ class Journal:
             headers=headers,
         ).json()
 
-        groups_list = Formatter.format_groups_list(institutes_list['institutes'])
-
-        operations = [
-            UpdateOne(
-                {"groupId": group["groupId"]},
-                {"$set": group},
-                upsert=True
-            )
-            for group in groups_list
-        ]
-
-        if operations:
-            self.client.journal.groups.bulk_write(operations)
+        groups_list = Formatter.format_groups_list(institutes_list["institutes"])
+        for group in groups_list:
+            self.client.journal.groups.update_one(
+            {"groupId": group["groupId"]}, {"$set": groups_list}, upsert=True
+        )
 
 
     def _update_group_schedule(self, groupId: int) -> None:
@@ -67,7 +46,7 @@ class Journal:
             {"groupId": groupId}, {"$set": new_schedule}, upsert=True
         )
 
-    def getScheduleById(self, groupId:int) -> dict:
+    def getScheduleById(self, groupId: int) -> dict:
         query = {"groupId": groupId}
 
         if self.client.journal.timetables.find_one(query) is None:
@@ -85,36 +64,6 @@ class Journal:
 
         return self.client.journal.groups.find_one(query)["groupId"]
 
-    def createUser(self, loginData: dict) -> dict:
-
-        user_id = 0
-
-        latest_user_id = [user for user in self.client.journal.users.find().sort({"userId":-1}).limit(1)]
-
-        if len(latest_user_id) != 0:
-
-            user_id = latest_user_id[0]["userId"] + 1
-
-        user = {
-            "userId": user_id,
-            "groupName":"", #Выбора группы не будет на этапе регистрации, он будет далее
-            "loginData":loginData 
-        }
-        
-        self.client.journal.users.insert_one(user)
-
-    def getUserGroupId(self, userId: int) -> int:
-        query = {"userId": userId}
-
-        return self.client.journal.users.find_one(query)["groupId"]
-    
-    def getUserByLogin(self, login: str):
-        query = {"loginData.login": login}
-
-        return self.client.journal.users.find_one(query)
-    
-    def getUserByUserId(self, userId: int) -> dict:
-        query = {"userId": userId}
-
-        return self.client.journal.users.find_one(query)
+    def setHomework(self, userId:int, homework: dict):
+        pass
 

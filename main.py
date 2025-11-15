@@ -1,42 +1,33 @@
 import os
-from fastapi import FastAPI
+from litestar import Litestar, get, post
 
-from src.journal import Journal
-from src.login import Login
-from src.schemes import *
-
-from pydantic import BaseModel
+from src.schemes import RegisterData
+from src.database import DataBase
 
 import uvicorn
 from dotenv import load_dotenv
 
 load_dotenv()
 
-jr = Journal(os.getenv("DB_CON_STR"))
-lg = Login(jr)
-
-app = FastAPI()
+db = DataBase(os.getenv("DB_CON_STR"))
 
 
-@app.get("/")
-def home_page() -> str:
+@get("/")
+async def home_page() -> str:
     return "Продам гараж"
 
 
-@app.get("/api/get_schedule")
-def get_schedule_endpoint(group: int) -> dict:
-    return jr.getScheduleById(group)
-    # jr._update_groups_list()
+@get("/api/get_schedule")
+async def get_schedule_endpoint(group: int) -> dict:
+    return db.journal.getScheduleById(group)
 
-@app.post("/api/register")
-def register(registerData: RegisterData) -> str:
-
-    status = lg.register(registerData.userName, registerData.login, registerData.password)
-
+@post("/api/register")
+async def register(data: RegisterData) -> dict:
+    status = db.users.register(data.userName, data.login, data.password)
     return status
 
 
+app = Litestar([home_page, get_schedule_endpoint, register])
 
 if __name__ == "__main__":
-    uvicorn.run(app=app)
-    # ParseUtils.update_parsed_schedule_by_id("189103")
+    uvicorn.run(app=app, host="0.0.0.0")
