@@ -4,8 +4,8 @@ from pymongo.errors import ServerSelectionTimeoutError
 from src.journal import Journal
 from src.users import Users
 
-class DataBase:
 
+class DataBase:
     def __init__(self, connection_string, timeout_ms=5000) -> None:
         self.client: MongoClient = MongoClient(
             connection_string,
