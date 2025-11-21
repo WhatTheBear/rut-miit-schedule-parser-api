@@ -40,7 +40,7 @@ class Users:
 
     def register(self, login: str, password: str) -> dict:
         if self.getUserByLogin(login) is not None:
-            return {"status": "err", "name": "Пользователь существует!"}
+            return {"status": "err", "details": "Пользователь существует!"}
 
         login_data: dict = {
             "login": login,
@@ -60,27 +60,46 @@ class Users:
         self.client.journal.users.insert_one(user)
         return {"status": "success"}
 
-    def login(self, login: str, password: str) -> dict:
+    def login(self, login: str, password: str, external_auth: bool = False) -> dict: 
+
+        """
+
+        Ввод параметра external_auth необходим, чтобы при обычном входе в приложение 
+        не было конфликта вместе c аутентификацией через другие ресурсы.
+
+        """
+
         user = self.getUserByLogin(login)
-        if user is None:
-            return {"status": "err", "name": "Пользователь не существует!"}
-        if not user["loginData"]["password"] == self._hash(password):
-            return {"status": "err", "name": "Неверный пароль!"}
-        auth_token = self._generate_auth_token
 
-        self.client.journal.users.update_one(
-            {"_id": user["_id"]},
-            {
-                "$push": {
-                    "loginData.auth_tokens": {
-                        "endDate": dt.now() + td(days=20),
-                        "token": auth_token,
+        if user is None: return {"status": "err", "details": "Пользователь не существует!"}
+
+        print(f"{user["loginData"]["password"] } != {self._hash(password)}")
+
+        if not user["loginData"]["password"] == self._hash(password): return {"status": "err", "details": "Неверный пароль!"}
+
+
+        if not external_auth:
+            
+            auth_token = self._generate_auth_token
+
+            self.client.journal.users.update_one(
+                {"_id": user["_id"]},
+                {
+                    "$push": {
+                        "loginData.auth_tokens": {
+                            "endDate": dt.now() + td(days=20),
+                            "token": auth_token,
+                        }
                     }
-                }
-            },
-        )
+                },
+            )
 
-        return {"status": "success", "auth_token": auth_token}
+            return {"status": "success", "auth_token": auth_token}
+        
+        return {"status": "success", "details": "Telegram Auth"} # Логика обработки входа через телеграм
+        
+
+
 
     def auth_token_validator(self, auth_token: str) -> dict:
         self._remove_expired_tokens()
@@ -89,14 +108,14 @@ class Users:
         )
 
         if user is None:
-            return {"status": "err", "name": "Токен не существует!"}
+            return {"status": "err", "details": "Токен не существует!"}
 
         for token in user["loginData"]["auth_tokens"]:
             if not token["token"] == auth_token:
                 continue
 
             return {"status": "success", "user": user}
-        return {"status": "err", "name": "Как ты это сделал..."}
+        return {"status": "err", "details": "Как ты это сделал..."}
 
     def setUserNameByLogin(self, login: str, new_name: str):
         user = self.getUserByLogin(login)

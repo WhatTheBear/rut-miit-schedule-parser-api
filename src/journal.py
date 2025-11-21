@@ -87,7 +87,7 @@ class Journal:
         )
 
         if not schedule_doc:
-            return {"status": "err", "name": "Расписание не найдено"}
+            return {"status": "err", "details": "Расписание не найдено"}
 
         updated_lessons = []
         homework_added = False
@@ -99,7 +99,7 @@ class Journal:
             updated_lessons.append(lesson)
 
         if not homework_added:
-            return {"status": "err", "name": "Занятие не найдено"}
+            return {"status": "err", "details": "Занятие не найдено"}
 
         self.client.journal.schedule.update_one(
             {"_id": schedule_doc["_id"]}, {"$set": {"lessons": updated_lessons}}
